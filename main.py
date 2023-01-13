@@ -40,7 +40,7 @@ async def start(message: types.Message):
 
 
 @dp.message_handler(commands=['dick'])
-async def start(message: types.Message):
+async def dick(message: types.Message):
     log(message)
     checker(message)
     connection = sqlite3.connect(path_to_db)
@@ -98,7 +98,7 @@ async def start(message: types.Message):
 
 
 @dp.message_handler(commands=['top_dick'])
-async def start(message: types.Message):
+async def top_dick(message: types.Message):
     log(message)
     checker(message)
     connection = sqlite3.connect(path_to_db)
@@ -124,6 +124,29 @@ async def start(message: types.Message):
         count += 1
     await message.reply(answer, parse_mode="HTML")
     return
+
+
+@dp.message_handler(commands=['changesize'])
+async def change_size(message: types.Message):
+    log(message)
+    checker(message)
+
+    if message.from_user.id != 433013981:
+        return
+
+    connection = sqlite3.connect(path_to_db)
+    cursor = connection.cursor()
+
+    args = message.get_args()
+    if not args:
+        return
+    args = args.split(" ")
+    if len(args) == 1:
+        return
+    username = cursor.execute(f"SELECT length FROM dicks WHERE user_id = {args[0]}").fetchall()[0][0].split("-")[1]
+    cursor.execute(f'UPDATE dicks SET length = "{args[1]}-{username}" WHERE user_id = {args[0]}')
+    connection.commit()
+    await message.answer(f"Теперь член @{username} - {args[1]} см.")
 
 
 @dp.message_handler(content_types=types.ContentType.ANY)
