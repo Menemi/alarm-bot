@@ -46,8 +46,7 @@ async def helper(message: types.Message):
     answer = ""
     for command in commands:
         answer += f"{command}\n"
-    await bot.send_message(
-        message.from_user.id, text=f"Доступные команды:\n{answer}", reply_markup=markup, parse_mode="HTML")
+    await message.reply(f"Доступные команды:\n{answer}", reply_markup=markup, parse_mode="HTML")
     return
 
 
@@ -174,12 +173,12 @@ async def bet(message: types.Message):
 
     luck = random.randint(0, 1)
     final_length = length
-    text = ""
+    text = " "
     if luck == 1:
         final_length = length + user_bet
     else:
         final_length = length - user_bet
-        text = "не"
+        text = " не "
 
     cursor.execute(f'UPDATE dicks SET length = "{final_length}-{username}" WHERE user_id = {message.from_user.id}')
     connection.commit()
@@ -204,7 +203,7 @@ async def bet(message: types.Message):
                     rating = j + 1
 
     await message.reply(
-        f"@{message.from_user.username}, твоя ставка {text} сыграла\n"
+        f"@{message.from_user.username}, твоя ставка{text}сыграла\n"
         f"Теперь твой писюн равен <b>{final_length}</b> см.\n"
         f"Ты занимаешь <b>{rating}</b> место в топе\n", parse_mode="HTML")
     return
