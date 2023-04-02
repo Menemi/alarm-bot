@@ -40,7 +40,8 @@ async def new_day_stater():
             users_id = cursor.execute("SELECT user_id FROM dicks").fetchall()[0]
             for user_id in users_id:
                 cursor.execute(f"UPDATE dicks SET flag = FALSE WHERE user_id = {user_id}")
-
+            connection.commit()
+            
             await bot.send_message(433013981, f"Можно заново измерить писюн", parse_mode="HTML")
             flag_written = False
             await asyncio.sleep(1200)
