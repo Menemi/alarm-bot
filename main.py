@@ -37,11 +37,11 @@ async def new_day_stater():
         if flag_written and \
                 (datetime.datetime.now().astimezone(tz).strftime("%H:%M") == "00:00" or
                  datetime.datetime.now().astimezone(tz).strftime("%H:%M") == "00:01"):
-            users_id = cursor.execute("SELECT user_id FROM dicks").fetchall()[0]
+            users_id = cursor.execute("SELECT user_id FROM dicks").fetchall()
             for user_id in users_id:
-                cursor.execute(f"UPDATE dicks SET flag = FALSE WHERE user_id = {user_id}")
+                cursor.execute(f"UPDATE dicks SET flag = FALSE WHERE user_id = {user_id[0]}")
             connection.commit()
-            
+
             await bot.send_message(433013981, f"Можно заново измерить писюн", parse_mode="HTML")
             flag_written = False
             await asyncio.sleep(1200)
