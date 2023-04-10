@@ -57,7 +57,7 @@ async def checker(message: types.Message):
     expected_user_id = cursor.execute(f"SELECT user_id FROM dicks WHERE user_id = {user_id}").fetchall()
 
     if not expected_user_id:
-        cursor.execute('INSERT INTO dicks(user_id, length) VALUES(?, ?)', (user_id, f"0-{message.from_user.username}"))
+        cursor.execute('INSERT INTO dicks(user_id, username) VALUES(?, ?)', (user_id, message.from_user.username))
         connection.commit()
 
     if not get_start_checker_flag():
@@ -97,28 +97,19 @@ async def dick(message: types.Message):
     cursor = connection.cursor()
     await checker(message)
     flag = checker2(message)
+    cursor.execute(f'UPDATE dicks SET username = "{message.from_user.username}" WHERE user_id = {message.from_user.id}')
+    connection.commit()
     if flag:
         current_length = \
-            cursor.execute(f"SELECT length FROM dicks WHERE user_id = {message.from_user.id}").fetchall()[0][0]
-        current_length = int(current_length.split('-')[0])
-        dicks = cursor.execute(f"SELECT length FROM dicks").fetchall()
-        dicks_length = []
+        cursor.execute(f"SELECT length FROM dicks WHERE user_id = {message.from_user.id}").fetchall()[0][0]
 
-        for dick in dicks:
-            dicks_length.append(int(dick[0].split('-')[0]))
+        top = cursor.execute("SELECT length, username FROM dicks order by length desc").fetchall()
 
-        expected_username = message.from_user.username
         rating = 0
-        for i in range(len(dicks_length) - 1):
-            for j in range(len(dicks_length) - i - 1):
-                if dicks_length[j] < dicks_length[j + 1]:
-                    dicks_length[j], dicks_length[j + 1] = dicks_length[j + 1], dicks_length[j]
-                    dicks[j], dicks[j + 1] = dicks[j + 1], dicks[j]
-
-                    if expected_username == dicks[j][0].split('-')[1]:
-                        rating = j
-                    elif expected_username == dicks[j + 1][0].split('-')[1]:
-                        rating = j + 1
+        for member in top:
+            if member[1] == message.from_user.username:
+                break
+            rating += 1
 
         await message.reply(
             f"@{message.from_user.username}, ты уже играл.\n"
@@ -129,42 +120,38 @@ async def dick(message: types.Message):
 
     random_number = 0
     while random_number == 0:
-        random_number = random.randint(-7, 10)
+        random_number = random.randint(0, 10)
+
+    negative = False
+    if random.randint(0, 100) <= 35:
+        negative = True
 
     user_id = message.from_user.id
 
     current_length = cursor.execute(f"SELECT length FROM dicks WHERE user_id = {user_id}").fetchall()[0][0]
-    username = current_length.split('-')[1]
-    current_length = int(current_length.split('-')[0])
-    final_length = current_length + random_number
+    username = message.from_user.username
+    if negative:
+        final_length = current_length - random_number
+    else:
+        final_length = current_length + random_number
+
     if final_length < 0:
         final_length = 0
 
-    cursor.execute(f'UPDATE dicks SET length = "{final_length}-{username}" WHERE user_id = {user_id}')
+    cursor.execute(f'UPDATE dicks SET length = {final_length} WHERE user_id = {user_id}')
     connection.commit()
 
-    text = "сократился" if random_number < 0 else "вырос"
+    text = "сократился" if negative else "вырос"
 
-    dicks = cursor.execute(f"SELECT length FROM dicks").fetchall()
-    dicks_length = []
+    top = cursor.execute("SELECT length, username FROM dicks order by length desc").fetchall()
 
-    for dick in dicks:
-        dicks_length.append(int(dick[0].split('-')[0]))
-
-    expected_username = message.from_user.username
     rating = 0
-    for i in range(len(dicks_length) - 1):
-        for j in range(len(dicks_length) - i - 1):
-            if dicks_length[j] < dicks_length[j + 1]:
-                dicks_length[j], dicks_length[j + 1] = dicks_length[j + 1], dicks_length[j]
-                dicks[j], dicks[j + 1] = dicks[j + 1], dicks[j]
+    for member in top:
+        if member[1] == message.from_user.username:
+            break
+        rating += 1
 
-                if expected_username == dicks[j][0].split('-')[1]:
-                    rating = j
-                elif expected_username == dicks[j + 1][0].split('-')[1]:
-                    rating = j + 1
-
-    if random_number < 0:
+    if negative:
         current_minus_try_count = \
             cursor.execute(f"SELECT minus_try_count FROM dicks WHERE user_id = {user_id}").fetchall()[0][0]
         cursor.execute(f'UPDATE dicks SET minus_try_count = {current_minus_try_count + 1} WHERE user_id = {user_id}')
@@ -190,23 +177,12 @@ async def top_dick(message: types.Message):
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
 
-    dicks = cursor.execute(f"SELECT length FROM dicks").fetchall()
-    dicks_length = []
-    for dick in dicks:
-        dicks_length.append(int(dick[0].split('-')[0]))
-
-    for i in range(len(dicks_length) - 1):
-        for j in range(len(dicks_length) - i - 1):
-            if dicks_length[j] < dicks_length[j + 1]:
-                dicks_length[j], dicks_length[j + 1] = dicks_length[j + 1], dicks_length[j]
-                dicks[j], dicks[j + 1] = dicks[j + 1], dicks[j]
+    top10dicks = cursor.execute("SELECT length, username FROM dicks order by length desc limit 10").fetchall()
 
     count = 0
     answer = "Топ 10 игроков\n\n"
     for i in range(10):
-        length = dicks[i][0].split('-')[0]
-        username = dicks[i][0].split('-')[1]
-        answer += f"{count}|<b>{username}</b> — <b>{length}</b> см.\n"
+        answer += f"{count}|<b>{top10dicks[i][1]}</b> — <b>{top10dicks[i][0]}</b> см.\n"
         count += 1
     await message.reply(answer, parse_mode="HTML")
     return
@@ -217,9 +193,10 @@ async def stats(message: types.Message):
     # 0: id
     # 1: user_id
     # 2: length
-    # 3: plus_try_count
-    # 4: minus_try_count
-    # 5: flag
+    # 3: username
+    # 4: plus_try_count
+    # 5: minus_try_count
+    # 6: flag
     await checker(message)
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
@@ -228,9 +205,9 @@ async def stats(message: types.Message):
     current_user = cursor.execute(f"SELECT * FROM dicks WHERE user_id = {user_id}").fetchall()[0]
     await message.reply(f"@{message.from_user.username}, твоя статистика:\n"
                         f"- Размер писюна: <b>{str(current_user[2]).split('-')[0]}</b>\n"
-                        f"- К-во измерений: <b>{int(current_user[3]) + int(current_user[4])}</b>\n"
-                        f"- К-во удачных измерений: <b>{int(current_user[3])}</b>\n"
-                        f"- К-во лузерских измерений: <b>{int(current_user[4])}</b>\n", parse_mode="HTML")
+                        f"- К-во измерений: <b>{int(current_user[4]) + int(current_user[5])}</b>\n"
+                        f"- К-во удачных измерений: <b>{int(current_user[4])}</b>\n"
+                        f"- К-во лузерских измерений: <b>{int(current_user[5])}</b>\n", parse_mode="HTML")
     return
 
 
@@ -250,8 +227,8 @@ async def change_size(message: types.Message):
     args = args.split(" ")
     if len(args) == 1:
         return
-    username = cursor.execute(f"SELECT length FROM dicks WHERE user_id = {args[0]}").fetchall()[0][0].split("-")[1]
-    cursor.execute(f'UPDATE dicks SET length = "{args[1]}-{username}" WHERE user_id = {args[0]}')
+    username = cursor.execute(f"SELECT username FROM dicks WHERE user_id = {args[0]}").fetchall()[0][0]
+    cursor.execute(f'UPDATE dicks SET length = {args[1]} WHERE user_id = {args[0]}')
     connection.commit()
     await message.answer(f"Теперь член @{username} - {args[1]} см.")
 
