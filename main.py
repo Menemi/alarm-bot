@@ -5,7 +5,7 @@ import asyncio
 import sqlite3
 
 from aiogram import Bot, Dispatcher, executor, types
-from config import logs, token, path_to_db, commands, buttons
+from config import token, path_to_db, commands
 
 logging.basicConfig(level=logging.INFO)
 
@@ -14,7 +14,9 @@ dp = Dispatcher(bot)
 tz = datetime.timezone(datetime.timedelta(hours=3), name="МСК")
 
 def log(message: types.Message):
+    logs = open("logs.json", "a")
     logs.write(f"{message}\n")
+    logs.close()
 
 def get_start_checker_flag():
     connection = sqlite3.connect(path_to_db)
