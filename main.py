@@ -5,7 +5,7 @@ import asyncio
 import sqlite3
 
 from aiogram import Bot, Dispatcher, executor, types
-from config import token, path_to_db, commands, buttons
+from config import logs, token, path_to_db, commands, buttons
 
 logging.basicConfig(level=logging.INFO)
 
@@ -13,6 +13,8 @@ bot = Bot(token=token)
 dp = Dispatcher(bot)
 tz = datetime.timezone(datetime.timedelta(hours=3), name="МСК")
 
+def log(message: types.Message):
+    logs.write(f"{message}\n")
 
 def get_start_checker_flag():
     connection = sqlite3.connect(path_to_db)
@@ -74,11 +76,8 @@ def checker2(message: types.Message):
 
 @dp.message_handler(commands=['start', 'help'])
 async def helper(message: types.Message):
+    log(message)
     await checker(message)
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    for command in buttons:
-        button = types.InlineKeyboardButton(command)
-        markup.add(button)
     answer = ""
     for command in commands:
         answer += f"{command}\n"
@@ -87,12 +86,13 @@ async def helper(message: types.Message):
               "Наш канал — @MenemiIsClown\n" \
               'Наш чат — <a href="nahnah.ru">ссылка</a>\n' \
               "Админ — @Menemi"
-    await message.reply(f"<b>Команды бота</b>:\n{answer}", reply_markup=markup, parse_mode="HTML")
+    await message.reply(f"<b>Команды бота</b>:\n{answer}", parse_mode="HTML")
     return
 
 
 @dp.message_handler(commands=['dick'])
 async def dick(message: types.Message):
+    log(message)
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
     await checker(message)
@@ -129,7 +129,6 @@ async def dick(message: types.Message):
     user_id = message.from_user.id
 
     current_length = cursor.execute(f"SELECT length FROM dicks WHERE user_id = {user_id}").fetchall()[0][0]
-    username = message.from_user.username
     if negative:
         final_length = current_length - random_number
     else:
@@ -173,6 +172,7 @@ async def dick(message: types.Message):
 
 @dp.message_handler(commands=['top_dick'])
 async def top_dick(message: types.Message):
+    log(message)
     await checker(message)
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
@@ -197,6 +197,7 @@ async def stats(message: types.Message):
     # 4: plus_try_count
     # 5: minus_try_count
     # 6: flag
+    log(message)
     await checker(message)
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
@@ -213,6 +214,7 @@ async def stats(message: types.Message):
 
 @dp.message_handler(commands=['changesize'])
 async def change_size(message: types.Message):
+    log(message)
     await checker(message)
 
     if message.from_user.id != 433013981:
@@ -233,10 +235,27 @@ async def change_size(message: types.Message):
     await message.answer(f"Теперь член @{username} - {args[1]} см.")
 
 
+@dp.message_handler(commands=['get'])
+async def change_size(message: types.Message):
+    log(message)
+    await checker(message)
+
+    if message.from_user.id != 433013981:
+        return
+
+    connection = sqlite3.connect(path_to_db)
+    cursor = connection.cursor()
+
+    data = cursor.execute("SELECT * FROM dicks").fetchall()
+    answer = "(id, tg_id, length, username, plus, minus, today)\n"
+    for row in data:
+        answer += f"{row}\n"
+    await message.answer(f"{answer}")
+
+
 @dp.message_handler(content_types=types.ContentType.ANY)
 async def echo(message: types.Message):
     await checker(message)
-    return
 
 
 if __name__ == '__main__':
