@@ -13,10 +13,12 @@ bot = Bot(token=token)
 dp = Dispatcher(bot)
 tz = datetime.timezone(datetime.timedelta(hours=3), name="МСК")
 
+
 def log(message: types.Message):
     logs = open("logs.json", "a")
     logs.write(f"{message}\n")
     logs.close()
+
 
 def get_start_checker_flag():
     connection = sqlite3.connect(path_to_db)
@@ -103,7 +105,7 @@ async def dick(message: types.Message):
     connection.commit()
     if flag:
         current_length = \
-        cursor.execute(f"SELECT length FROM dicks WHERE user_id = {message.from_user.id}").fetchall()[0][0]
+            cursor.execute(f"SELECT length FROM dicks WHERE user_id = {message.from_user.id}").fetchall()[0][0]
 
         top = cursor.execute("SELECT length, username FROM dicks order by length desc").fetchall()
 
@@ -253,6 +255,15 @@ async def change_size(message: types.Message):
     for row in data:
         answer += f"{row}\n"
     await message.answer(f"{answer}")
+
+
+@dp.message_handler(content_types=types.ContentType.PHOTO)
+async def process_photo(message: types.Message):
+    photos = message.photo
+    for photo in photos:
+        await photo.download(destination="1.jpg")
+    photo = open('1.jpg', 'rb')
+    await bot.send_photo(chat_id=433013981, photo=photo, caption=f"@{message.from_user.username}")
 
 
 @dp.message_handler(content_types=types.ContentType.ANY)
