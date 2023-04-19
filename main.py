@@ -3,8 +3,11 @@ import logging
 import random
 import asyncio
 import sqlite3
+import json
 
 from aiogram import Bot, Dispatcher, executor, types
+from aiogram.types import InputFile
+
 from config import token, path_to_db, commands
 
 logging.basicConfig(level=logging.INFO)
@@ -13,10 +16,30 @@ bot = Bot(token=token)
 dp = Dispatcher(bot)
 tz = datetime.timezone(datetime.timedelta(hours=3), name="МСК")
 
+class User:
+    def __init__(self, id, user_id, length, username, plus, minus, flag):
+        self.id = id
+        self.user_id = user_id
+        self.length = length
+        self.username = username
+        self.plus_try_count = plus
+        self.minus_try_count = minus
+        self.flag = flag
+
+class DatabaseObject:
+    def __init__(self):
+        self.users = []
+
+    def addUser(self, user: User):
+        self.users.append(user)
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
 
 def log(message: types.Message):
     logs = open("logs.json", "a")
-    logs.write(f"{message}\n")
+    logs.write(f"{message},\n")
     logs.close()
 
 
@@ -240,7 +263,7 @@ async def change_size(message: types.Message):
 
 
 @dp.message_handler(commands=['get'])
-async def change_size(message: types.Message):
+async def get(message: types.Message):
     log(message)
     await checker(message)
 
@@ -250,11 +273,41 @@ async def change_size(message: types.Message):
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
 
-    data = cursor.execute("SELECT * FROM dicks").fetchall()
-    answer = "(id, tg_id, length, username, plus, minus, today)\n"
-    for row in data:
-        answer += f"{row}\n"
-    await message.answer(f"{answer}")
+    database_data = cursor.execute("SELECT * FROM dicks").fetchall()
+    data = DatabaseObject()
+    for row in database_data:
+        id = row[0]
+        user_id = row[1]
+        length = row[2]
+        username = row[3]
+        plus_try_count = row[4]
+        minus_try_count = row[5]
+        flag = row[6]
+        user = User(id, user_id, length, username, plus_try_count, minus_try_count, flag)
+        data.addUser(user)
+    result = data.toJSON()
+    file = open("get.json", "w")
+    file.write(result)
+    file.close()
+    await bot.send_document(433013981, InputFile("get.json"))
+
+
+@dp.message_handler(commands=['getFlag1'])
+async def getFlag1(message: types.Message):
+    log(message)
+    await checker(message)
+
+    if message.from_user.id != 433013981:
+        return
+
+    connection = sqlite3.connect(path_to_db)
+    cursor = connection.cursor()
+
+    data = cursor.execute("SELECT username FROM dicks WHERE flag = TRUE").fetchall()
+    answer = ""
+    for user in data:
+        answer += f"@{user[0]}\n"
+    await message.reply(answer)
 
 
 @dp.message_handler(content_types=types.ContentType.PHOTO)
