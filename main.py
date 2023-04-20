@@ -5,6 +5,7 @@ import asyncio
 import sqlite3
 import json
 
+import aiogram.utils.exceptions
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InputFile
 
@@ -16,6 +17,7 @@ bot = Bot(token=token)
 dp = Dispatcher(bot)
 tz = datetime.timezone(datetime.timedelta(hours=3), name="МСК")
 
+
 class User:
     def __init__(self, id, user_id, length, username, plus, minus, flag):
         self.id = id
@@ -25,6 +27,7 @@ class User:
         self.plus_try_count = plus
         self.minus_try_count = minus
         self.flag = flag
+
 
 class DatabaseObject:
     def __init__(self):
@@ -312,33 +315,39 @@ async def getFlag1(message: types.Message):
 
 @dp.message_handler(commands=['sendMessage'])
 async def send_message(message: types.Message):
-    log(message)
-    await checker(message)
+    try:
+        log(message)
+        await checker(message)
 
-    if message.from_user.id != 433013981:
-        return
+        if message.from_user.id != 433013981:
+            return
 
-    args = message.get_args()
-    args = args.split(' ')
-    chat_id = args[0]
-    args.pop(0)
+        args = message.get_args()
+        args = args.split(' ')
+        chat_id = args[0]
+        args.pop(0)
 
-    message_text = ""
-    for arg in args:
-        message_text += f"{arg} "
+        message_text = ""
+        for arg in args:
+            message_text += f"{arg} "
 
-    await bot.send_message(chat_id, message_text)
+        await bot.send_message(chat_id, message_text)
+        await bot.send_message(433013981, f"успешно отправил сообщение {chat_id}")
+    except aiogram.utils.exceptions.CantInitiateConversation:
+        await bot.send_message(433013981, "бот не может инициировать беседу с этим пользователем")
+    except aiogram.utils.exceptions.BotBlocked:
+        await bot.send_message(433013981, "бот был заблокирован пользователем")
+    except aiogram.utils.exceptions.BotKicked:
+        await bot.send_message(433013981, "бот был выгнан из группы")
 
 
 @dp.message_handler(content_types=types.ContentType.PHOTO)
 async def process_photo(message: types.Message):
-    photos = message.photo
-    for photo in photos:
-        await photo.download(destination="1.jpg")
-
-    photo = open('1.jpg', 'rb')
-    await bot.send_photo(chat_id=433013981, photo=photo, caption=f"@{message.from_user.username}\nchat_id: {message.from_user.id}")
-
+    new_message = await bot.forward_message(chat_id=433013981,
+                                            from_chat_id=message.chat.id,
+                                            message_id=message.message_id)
+    await new_message.reply(text=f"@{message.from_user.username}\n"
+                                 f"chat_id: {message.from_user.id}")
 
 
 @dp.message_handler(content_types=types.ContentType.ANY)
