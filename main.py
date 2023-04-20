@@ -89,7 +89,8 @@ async def checker(message: types.Message):
     expected_user_id = cursor.execute(f"SELECT user_id FROM dicks WHERE user_id = {user_id}").fetchall()
 
     if not expected_user_id:
-        cursor.execute('INSERT INTO dicks(user_id, username) VALUES(?, ?)', (user_id, message.from_user.username))
+        cursor.execute('INSERT INTO dicks(user_id, username, chat_ids) VALUES(?, ?, ?)',
+                       (user_id, message.from_user.username, f"{user_id}a"))
         connection.commit()
 
     if not get_start_checker_flag():
@@ -104,10 +105,56 @@ def checker2(message: types.Message):
     return cursor.execute(f"SELECT flag FROM dicks WHERE user_id = {user_id}").fetchall()[0][0]
 
 
+def print_dick_with_rating1(username, length, rating):
+    return f"@{username}, ты уже играл.\n" \
+           f"Сейчас он равен <b>{length}</b> см.\n" \
+           f"Ты занимаешь <b>{rating}</b> место в топе.\n" \
+           f"Следующая попытка завтра!"
+
+
+def print_dick_without_rating1(username, length):
+    return f"@{username}, ты уже играл.\n" \
+           f"Сейчас он равен <b>{length}</b> см.\n" \
+           f"Следующая попытка завтра!"
+
+
+def print_dick_with_rating2(username, text, random_number, final_length, rating):
+    return f"@{username}, твой писюн {text} на <b>{abs(random_number)}</b> см.\n" \
+           f"Теперь он равен <b>{final_length}</b> см.\n" \
+           f"Ты занимаешь <b>{rating}</b> место в топе.\n" \
+           f"Следующая попытка завтра!"
+
+
+def print_dick_without_rating2(username, text, random_number, final_length):
+    return f"@{username}, твой писюн {text} на <b>{abs(random_number)}</b> см.\n" \
+           f"Теперь он равен <b>{final_length}</b> см.\n" \
+           f"Следующая попытка завтра!"
+
+
+def chat_check(message: types.Message):
+    connection = sqlite3.connect(path_to_db)
+    cursor = connection.cursor()
+
+    chat_ids = cursor.execute(f"SELECT chat_ids FROM dicks WHERE user_id = {message.from_user.id}").fetchall()[0][
+        0].split("a")
+    flag2 = False
+    for chat_id in chat_ids:
+        if str(chat_id) == str(message.chat.id):
+            flag2 = True
+            break
+
+    if not flag2:
+        chat_ids = cursor.execute(f"SELECT chat_ids FROM dicks WHERE user_id = {message.from_user.id}").fetchall()[0][0]
+        cursor.execute(
+            f'UPDATE dicks SET chat_ids = "{chat_ids}{message.chat.id}a" WHERE user_id = {message.from_user.id}')
+        connection.commit()
+
+
 @dp.message_handler(commands=['start', 'help'])
 async def helper(message: types.Message):
     log(message)
     await checker(message)
+    chat_check(message)
     answer = ""
     for command in commands:
         answer += f"{command}\n"
@@ -127,13 +174,16 @@ async def dick(message: types.Message):
     cursor = connection.cursor()
     await checker(message)
     flag = checker2(message)
+    chat_check(message)
+
     cursor.execute(f'UPDATE dicks SET username = "{message.from_user.username}" WHERE user_id = {message.from_user.id}')
     connection.commit()
     if flag:
         current_length = \
             cursor.execute(f"SELECT length FROM dicks WHERE user_id = {message.from_user.id}").fetchall()[0][0]
 
-        top = cursor.execute("SELECT length, username FROM dicks order by length desc").fetchall()
+        top = cursor.execute(
+            f"SELECT length, username FROM dicks WHERE chat_ids LIKE '%{message.chat.id}%' ORDER BY length DESC").fetchall()
 
         rating = 0
         for member in top:
@@ -141,11 +191,12 @@ async def dick(message: types.Message):
                 break
             rating += 1
 
-        await message.reply(
-            f"@{message.from_user.username}, ты уже играл.\n"
-            f"Сейчас он равен <b>{current_length}</b> см.\n"
-            f"Ты занимаешь <b>{rating}</b> место в топе.\n"
-            f"Следующая попытка завтра!", parse_mode="HTML")
+        if message.chat.id == message.from_user.id:
+            await message.reply(print_dick_without_rating1(message.from_user.username, current_length),
+                                parse_mode="HTML")
+            return
+        await message.reply(print_dick_with_rating1(message.from_user.username, current_length, rating),
+                            parse_mode="HTML")
         return
 
     random_number = 0
@@ -172,7 +223,8 @@ async def dick(message: types.Message):
 
     text = "сократился" if negative else "вырос"
 
-    top = cursor.execute("SELECT length, username FROM dicks order by length desc").fetchall()
+    top = cursor.execute(
+        f"SELECT length, username FROM dicks WHERE chat_ids LIKE '%{message.chat.id}%' ORDER BY length DESC").fetchall()
 
     rating = 0
     for member in top:
@@ -192,11 +244,15 @@ async def dick(message: types.Message):
     cursor.execute(f'UPDATE dicks SET flag = TRUE WHERE user_id = {user_id}')
     connection.commit()
 
+    if message.chat.id == message.from_user.id:
+        await message.reply(
+            print_dick_without_rating2(message.from_user.username, text, abs(random_number), final_length),
+            parse_mode="HTML")
+        return
     await message.reply(
-        f"@{message.from_user.username}, твой писюн {text} на <b>{abs(random_number)}</b> см.\n"
-        f"Теперь он равен <b>{final_length}</b> см.\n"
-        f"Ты занимаешь <b>{rating}</b> место в топе.\n"
-        f"Следующая попытка завтра!", parse_mode="HTML")
+        print_dick_with_rating2(message.from_user.username, text, abs(random_number), final_length, rating),
+        parse_mode="HTML")
+
     return
 
 
@@ -204,15 +260,21 @@ async def dick(message: types.Message):
 async def top_dick(message: types.Message):
     log(message)
     await checker(message)
+    chat_check(message)
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
 
-    top10dicks = cursor.execute("SELECT length, username FROM dicks order by length desc limit 10").fetchall()
+    top10dicks = cursor.execute(f"SELECT length, username "
+                                f"FROM dicks "
+                                f"WHERE chat_ids "
+                                f"LIKE '%{message.chat.id}%' "
+                                f"ORDER BY length "
+                                f"DESC LIMIT 10").fetchall()
 
     count = 0
-    answer = "Топ 10 игроков\n\n"
-    for i in range(10):
-        answer += f"{count}|<b>{top10dicks[i][1]}</b> — <b>{top10dicks[i][0]}</b> см.\n"
+    answer = f"Топ {len(top10dicks)} игроков\n\n"
+    for dick in top10dicks:
+        answer += f"{count}|<b>{dick[1]}</b> — <b>{dick[0]}</b> см.\n"
         count += 1
     await message.reply(answer, parse_mode="HTML")
     return
@@ -229,6 +291,7 @@ async def stats(message: types.Message):
     # 6: flag
     log(message)
     await checker(message)
+    chat_check(message)
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
 
