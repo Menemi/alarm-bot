@@ -310,13 +310,35 @@ async def getFlag1(message: types.Message):
     await message.reply(answer)
 
 
+@dp.message_handler(commands=['sendMessage'])
+async def send_message(message: types.Message):
+    log(message)
+    await checker(message)
+
+    if message.from_user.id != 433013981:
+        return
+
+    args = message.get_args()
+    args = args.split(' ')
+    chat_id = args[0]
+    args.pop(0)
+
+    message_text = ""
+    for arg in args:
+        message_text += f"{arg} "
+
+    await bot.send_message(chat_id, message_text)
+
+
 @dp.message_handler(content_types=types.ContentType.PHOTO)
 async def process_photo(message: types.Message):
     photos = message.photo
     for photo in photos:
         await photo.download(destination="1.jpg")
+
     photo = open('1.jpg', 'rb')
-    await bot.send_photo(chat_id=433013981, photo=photo, caption=f"@{message.from_user.username}")
+    await bot.send_photo(chat_id=433013981, photo=photo, caption=f"@{message.from_user.username}\nchat_id: {message.from_user.id}")
+
 
 
 @dp.message_handler(content_types=types.ContentType.ANY)
