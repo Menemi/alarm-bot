@@ -69,7 +69,7 @@ async def new_day_stater():
         if flag_written and \
                 (datetime.datetime.now().astimezone(tz).strftime("%H:%M") == "00:00" or
                  datetime.datetime.now().astimezone(tz).strftime("%H:%M") == "00:01"):
-            users_id = cursor.execute("SELECT user_id FROM dicks").fetchall()
+            users_id = cursor.execute("SELECT user_id FROM dicks WHERE flag = TRUE").fetchall()
             for user_id in users_id:
                 cursor.execute(f"UPDATE dicks SET flag = FALSE WHERE user_id = {user_id[0]}")
             connection.commit()
