@@ -358,6 +358,17 @@ async def get(message: types.Message):
     await bot.send_document(433013981, InputFile("get.json"))
 
 
+@dp.message_handler(commands=['logs'])
+async def get(message: types.Message):
+    log(message)
+    await checker(message)
+
+    if message.from_user.id != 433013981:
+        return
+
+    await bot.send_document(433013981, InputFile("logs.json"))
+
+
 @dp.message_handler(commands=['getFlag1'])
 async def getFlag1(message: types.Message):
     log(message)
