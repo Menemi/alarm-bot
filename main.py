@@ -9,7 +9,7 @@ import aiogram.utils.exceptions
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InputFile
 
-from config import token, path_to_db, commands
+from config import token, path_to_db, commands, admin_tg_id
 
 logging.basicConfig(level=logging.INFO)
 
@@ -74,7 +74,7 @@ async def new_day_stater():
                 cursor.execute(f"UPDATE dicks SET flag = FALSE WHERE user_id = {user_id[0]}")
             connection.commit()
 
-            await bot.send_message(433013981, f"Можно заново измерить писюн", parse_mode="HTML")
+            await bot.send_message(admin_tg_id, f"Можно заново измерить писюн", parse_mode="HTML")
             flag_written = False
             await asyncio.sleep(1200)
         else:
@@ -103,32 +103,6 @@ def checker2(message: types.Message):
     cursor = connection.cursor()
     user_id = message.from_user.id
     return cursor.execute(f"SELECT flag FROM dicks WHERE user_id = {user_id}").fetchall()[0][0]
-
-
-def print_dick_with_rating1(username, length, rating):
-    return f"@{username}, ты уже играл.\n" \
-           f"Сейчас он равен <b>{length}</b> см.\n" \
-           f"Ты занимаешь <b>{rating}</b> место в топе.\n" \
-           f"Следующая попытка завтра!"
-
-
-def print_dick_without_rating1(username, length):
-    return f"@{username}, ты уже играл.\n" \
-           f"Сейчас он равен <b>{length}</b> см.\n" \
-           f"Следующая попытка завтра!"
-
-
-def print_dick_with_rating2(username, text, random_number, final_length, rating):
-    return f"@{username}, твой писюн {text} на <b>{abs(random_number)}</b> см.\n" \
-           f"Теперь он равен <b>{final_length}</b> см.\n" \
-           f"Ты занимаешь <b>{rating}</b> место в топе.\n" \
-           f"Следующая попытка завтра!"
-
-
-def print_dick_without_rating2(username, text, random_number, final_length):
-    return f"@{username}, твой писюн {text} на <b>{abs(random_number)}</b> см.\n" \
-           f"Теперь он равен <b>{final_length}</b> см.\n" \
-           f"Следующая попытка завтра!"
 
 
 def chat_check(message: types.Message):
@@ -192,11 +166,18 @@ async def dick(message: types.Message):
             rating += 1
 
         if message.chat.id == message.from_user.id:
-            await message.reply(print_dick_without_rating1(message.from_user.username, current_length),
-                                parse_mode="HTML")
+            await message.reply(
+                f"@{message.from_user.username}, ты уже играл.\n" +
+                f"Сейчас он равен <b>{current_length}</b> см.\n" +
+                f"Следующая попытка завтра!",
+                parse_mode="HTML")
             return
-        await message.reply(print_dick_with_rating1(message.from_user.username, current_length, rating),
-                            parse_mode="HTML")
+        await message.reply(
+            f"@{message.from_user.username}, ты уже играл.\n" +
+            f"Сейчас он равен <b>{current_length}</b> см.\n" +
+            f"Ты занимаешь <b>{rating}</b> место в топе.\n" +
+            f"Следующая попытка завтра!",
+            parse_mode="HTML")
         return
 
     random_number = 0
@@ -246,11 +227,16 @@ async def dick(message: types.Message):
 
     if message.chat.id == message.from_user.id:
         await message.reply(
-            print_dick_without_rating2(message.from_user.username, text, abs(random_number), final_length),
+            f"@{message.from_user.username}, твой писюн {text} на <b>{abs(random_number)}</b> см.\n" +
+            f"Теперь он равен <b>{final_length}</b> см.\n" +
+            f"Следующая попытка завтра!",
             parse_mode="HTML")
         return
     await message.reply(
-        print_dick_with_rating2(message.from_user.username, text, abs(random_number), final_length, rating),
+        f"@{message.from_user.username}, твой писюн {text} на <b>{abs(random_number)}</b> см.\n" +
+        f"Теперь он равен <b>{final_length}</b> см.\n" +
+        f"Ты занимаешь <b>{rating}</b> место в топе.\n" +
+        f"Следующая попытка завтра!",
         parse_mode="HTML")
 
     return
@@ -310,7 +296,7 @@ async def change_size(message: types.Message):
     log(message)
     await checker(message)
 
-    if message.from_user.id != 433013981:
+    if message.from_user.id != admin_tg_id:
         return
 
     connection = sqlite3.connect(path_to_db)
@@ -333,7 +319,7 @@ async def get(message: types.Message):
     log(message)
     await checker(message)
 
-    if message.from_user.id != 433013981:
+    if message.from_user.id != admin_tg_id:
         return
 
     connection = sqlite3.connect(path_to_db)
@@ -355,7 +341,7 @@ async def get(message: types.Message):
     file = open("get.json", "w")
     file.write(result)
     file.close()
-    await bot.send_document(433013981, InputFile("get.json"))
+    await bot.send_document(admin_tg_id, InputFile("get.json"))
 
 
 @dp.message_handler(commands=['logs'])
@@ -363,10 +349,10 @@ async def get(message: types.Message):
     log(message)
     await checker(message)
 
-    if message.from_user.id != 433013981:
+    if message.from_user.id != admin_tg_id:
         return
 
-    await bot.send_document(433013981, InputFile("logs.json"))
+    await bot.send_document(admin_tg_id, InputFile("logs.json"))
 
 
 @dp.message_handler(commands=['getFlag1'])
@@ -374,7 +360,7 @@ async def getFlag1(message: types.Message):
     log(message)
     await checker(message)
 
-    if message.from_user.id != 433013981:
+    if message.from_user.id != admin_tg_id:
         return
 
     connection = sqlite3.connect(path_to_db)
@@ -393,7 +379,7 @@ async def send_message(message: types.Message):
         log(message)
         await checker(message)
 
-        if message.from_user.id != 433013981:
+        if message.from_user.id != admin_tg_id:
             return
 
         args = message.get_args()
@@ -406,13 +392,13 @@ async def send_message(message: types.Message):
             message_text += f"{arg} "
 
         await bot.send_message(chat_id, message_text)
-        await bot.send_message(433013981, f"успешно отправил сообщение {chat_id}")
+        await bot.send_message(admin_tg_id, f"успешно отправил сообщение {chat_id}")
     except aiogram.utils.exceptions.CantInitiateConversation:
-        await bot.send_message(433013981, "бот не может инициировать беседу с этим пользователем")
+        await bot.send_message(admin_tg_id, "бот не может инициировать беседу с этим пользователем")
     except aiogram.utils.exceptions.BotBlocked:
-        await bot.send_message(433013981, "бот был заблокирован пользователем")
+        await bot.send_message(admin_tg_id, "бот был заблокирован пользователем")
     except aiogram.utils.exceptions.BotKicked:
-        await bot.send_message(433013981, "бот был выгнан из группы")
+        await bot.send_message(admin_tg_id, "бот был выгнан из группы")
 
 
 @dp.message_handler(content_types=types.ContentType.PHOTO)
