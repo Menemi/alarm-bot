@@ -405,6 +405,7 @@ async def send_message(message: types.Message):
     types.ContentType.PHOTO,
     types.ContentType.VIDEO,
     types.ContentType.VOICE,
+    types.ContentType.VIDEO_NOTE,
     types.ContentType.STICKER
 ])
 async def process_photo(message: types.Message):
