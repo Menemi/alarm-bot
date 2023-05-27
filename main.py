@@ -401,7 +401,12 @@ async def send_message(message: types.Message):
         await bot.send_message(admin_tg_id, "бот был выгнан из группы")
 
 
-@dp.message_handler(content_types=types.ContentType.PHOTO)
+@dp.message_handler(content_types=[
+    types.ContentType.PHOTO,
+    types.ContentType.VIDEO,
+    types.ContentType.VOICE,
+    types.ContentType.STICKER
+])
 async def process_photo(message: types.Message):
     new_message = await bot.forward_message(chat_id=-972684659,
                                             from_chat_id=message.chat.id,
@@ -413,21 +418,6 @@ async def process_photo(message: types.Message):
                                  f"user id: {message.from_user.id}\n"
                                  f"chat id: {message.chat.id}\n"
                                  f"{chat_link}")
-
-
-@dp.message_handler(content_types=types.ContentType.TEXT)
-async def test(message: types.Message):
-    if not message.is_command() and \
-            str(message.chat.id) != str(-1001809172501) and \
-            str(message.chat.id) != str(-972684659):
-        chat_link = ""
-        if str(await message.chat.get_url()) != "None":
-            chat_link = f"chat link: {await message.chat.get_url()}\n"
-        await bot.send_message(-972684659,
-                               f"chat id: {message.chat.id}\n"
-                               f"{chat_link}"
-                               f"username: @{message.from_user.username}\n"
-                               f"{message.text}")
 
 
 @dp.message_handler(content_types=types.ContentType.ANY)
