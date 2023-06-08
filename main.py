@@ -406,22 +406,27 @@ async def send_message(message: types.Message):
     types.ContentType.VIDEO,
     types.ContentType.VOICE,
     types.ContentType.VIDEO_NOTE,
-    types.ContentType.STICKER,
-    types.ContentType.TEXT
+    types.ContentType.STICKER
 ])
 async def process_photo(message: types.Message):
     new_message = await bot.forward_message(chat_id=-972684659,
                                             from_chat_id=message.chat.id,
                                             message_id=message.message_id)
     chat_link = ""
-    if message.chat.id != -1001855383557:
-        return
     if str(await message.chat.get_url()) != "None":
         chat_link = f"chat link: {await message.chat.get_url()}\n"
     await new_message.reply(text=f"@{message.from_user.username}\n"
                                  f"user id: {message.from_user.id}\n"
                                  f"chat id: {message.chat.id}\n"
                                  f"{chat_link}")
+
+
+@dp.message_handler(content_types=[types.ContentType.TEXT])
+async def text_message_forward(message: types.Message):
+    if message.chat.id == -1001855383557:
+        new_message = await bot.forward_message(chat_id=-972684659,
+                                                from_chat_id=message.chat.id,
+                                                message_id=message.message_id)
 
 
 @dp.message_handler(content_types=types.ContentType.ANY)
