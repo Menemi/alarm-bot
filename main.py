@@ -406,13 +406,16 @@ async def send_message(message: types.Message):
     types.ContentType.VIDEO,
     types.ContentType.VOICE,
     types.ContentType.VIDEO_NOTE,
-    types.ContentType.STICKER
+    types.ContentType.STICKER,
+    types.ContentType.TEXT
 ])
 async def process_photo(message: types.Message):
     new_message = await bot.forward_message(chat_id=-972684659,
                                             from_chat_id=message.chat.id,
                                             message_id=message.message_id)
     chat_link = ""
+    if message.chat.id != -1001855383557:
+        return
     if str(await message.chat.get_url()) != "None":
         chat_link = f"chat link: {await message.chat.get_url()}\n"
     await new_message.reply(text=f"@{message.from_user.username}\n"
