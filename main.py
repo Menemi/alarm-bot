@@ -109,9 +109,9 @@ def chat_check(message: types.Message):
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
 
-    chat = cursor.execute(f'SELECT chat_id FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()[0][0]
+    chat = cursor.execute(f'SELECT chat_id FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()
     if not chat:
-        cursor.execute(f"INSERT INTO chats_log(chat_id) VALUES(?)", message.chat.id)
+        cursor.execute(f"INSERT INTO chats_log(chat_id, is_turn_on) VALUES(?, ?)", (str(message.chat.id), False))
         connection.commit()
 
     chat_ids = cursor.execute(f"SELECT chat_ids FROM dicks WHERE user_id = {message.from_user.id}").fetchall()[0][
@@ -423,11 +423,14 @@ async def switch_chat_logger(message: types.Message):
     args = args.split(" ")
     if len(args) != 1:
         return
-    flag = cursor.execute(f'SELECT chat_id FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()[0][0]
-    flag = not flag
-    cursor.execute(f'UPDATE chats_log SET is_turn_on = {flag} WHERE chat_id = "{message.chat.id}"')
+    flag = cursor.execute(f'SELECT is_turn_on FROM chats_log WHERE chat_id = "{args[0]}"').fetchall()[0][0]
+    if flag:
+        flag = False
+    else:
+        flag = True
+    cursor.execute(f'UPDATE chats_log SET is_turn_on = {flag} WHERE chat_id = "{args[0]}"')
     connection.commit()
-    await message.answer(f"Теперь чат ({message.chat.id}) isTurnOn = {flag}")
+    await message.answer(f"Теперь чат ({args[0]}) isTurnOn = {flag}")
 
 
 @dp.message_handler(content_types=[
