@@ -24,3 +24,13 @@ cursor.execute(
     "            primary key autoincrement,"
     "    flag bool                  not null"
     ");")
+
+cursor.execute(
+    "create table if not exists chats_log"
+    "("
+    "    id         integer                not null"
+    "        constraint chats_log_pk"
+    "            primary key autoincrement,"
+    "    chat_id    text    default '1488' not null,"
+    "    is_turn_on boolean default false  not null"
+    ");")

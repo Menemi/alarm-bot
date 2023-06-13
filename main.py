@@ -9,7 +9,7 @@ import aiogram.utils.exceptions
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InputFile
 
-from config import token, path_to_db, commands, admin_tg_id
+from config import token, path_to_db, commands, admin_tg_id, chat_for_logs
 
 logging.basicConfig(level=logging.INFO)
 
@@ -108,6 +108,11 @@ def checker2(message: types.Message):
 def chat_check(message: types.Message):
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
+
+    chat = cursor.execute(f'SELECT chat_id FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()[0][0]
+    if not chat:
+        cursor.execute(f"INSERT INTO chats_log(chat_id) VALUES(?)", message.chat.id)
+        connection.commit()
 
     chat_ids = cursor.execute(f"SELECT chat_ids FROM dicks WHERE user_id = {message.from_user.id}").fetchall()[0][
         0].split("a")
@@ -401,15 +406,43 @@ async def send_message(message: types.Message):
         await bot.send_message(admin_tg_id, "бот был выгнан из группы")
 
 
+@dp.message_handler(commands=['switchChatLogger'])
+async def switch_chat_logger(message: types.Message):
+    log(message)
+    await checker(message)
+
+    if message.from_user.id != admin_tg_id:
+        return
+
+    connection = sqlite3.connect(path_to_db)
+    cursor = connection.cursor()
+
+    args = message.get_args()
+    if not args:
+        return
+    args = args.split(" ")
+    if len(args) != 1:
+        return
+    flag = cursor.execute(f'SELECT chat_id FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()[0][0]
+    flag = not flag
+    cursor.execute(f'UPDATE chats_log SET is_turn_on = {flag} WHERE chat_id = "{message.chat.id}"')
+    connection.commit()
+    await message.answer(f"Теперь чат ({message.chat.id}) isTurnOn = {flag}")
+
+
 @dp.message_handler(content_types=[
     types.ContentType.PHOTO,
     types.ContentType.VIDEO,
-    types.ContentType.VOICE,
-    types.ContentType.VIDEO_NOTE,
-    types.ContentType.STICKER
+    types.ContentType.VIDEO_NOTE
 ])
 async def process_photo(message: types.Message):
-    new_message = await bot.forward_message(chat_id=-972684659,
+    connection = sqlite3.connect(path_to_db)
+    cursor = connection.cursor()
+
+    if not cursor.execute(f'SELECT is_turn_on FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()[0][0]:
+        return
+
+    new_message = await bot.forward_message(chat_id=chat_for_logs,
                                             from_chat_id=message.chat.id,
                                             message_id=message.message_id)
     chat_link = ""
@@ -422,11 +455,21 @@ async def process_photo(message: types.Message):
 
 
 @dp.message_handler(content_types=[types.ContentType.TEXT])
-async def text_message_forward(message: types.Message):
-    if message.chat.id == -1001855383557:
-        new_message = await bot.forward_message(chat_id=-972684659,
-                                                from_chat_id=message.chat.id,
-                                                message_id=message.message_id)
+async def process_photo(message: types.Message):
+    connection = sqlite3.connect(path_to_db)
+    cursor = connection.cursor()
+
+    if not cursor.execute(f'SELECT is_turn_on FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()[0][0]:
+        return
+
+    chat_link = ""
+    if str(await message.chat.get_url()) != "None":
+        chat_link = f"chat link: {await message.chat.get_url()}\n"
+    await bot.send_message(chat_for_logs,
+                           f"@{message.from_user.username}\n"
+                           f"user id: {message.from_user.id}\n"
+                           f"chat id: {message.chat.id}\n"
+                           f"{chat_link}")
 
 
 @dp.message_handler(content_types=types.ContentType.ANY)
