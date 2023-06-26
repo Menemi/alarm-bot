@@ -89,7 +89,6 @@ async def checker(message: types.Message):
     expected_user_id = cursor.execute(f"SELECT user_id FROM dicks WHERE user_id = {user_id}").fetchall()
 
     if str(message.chat.id) != "-1001809172501" and str(message.chat.id).find('-') != -1:
-        await message.answer("БОТ ОТКЛЮЧАЕТСЯ ДО МОМЕНТА, ПОКА КТО-НИБУДЬ НЕ СКИНЕТ НЮДСЫ")
         return "ERROR"
 
     if not expected_user_id:
@@ -137,6 +136,7 @@ def chat_check(message: types.Message):
 async def helper(message: types.Message):
     log(message)
     if await checker(message) == "ERROR":
+        await message.answer("БОТ ОТКЛЮЧАЕТСЯ ДО МОМЕНТА, ПОКА КТО-НИБУДЬ НЕ СКИНЕТ НЮДСЫ")
         return
     chat_check(message)
     answer = ""
@@ -157,6 +157,7 @@ async def dick(message: types.Message):
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
     if await checker(message) == "ERROR":
+        await message.answer("БОТ ОТКЛЮЧАЕТСЯ ДО МОМЕНТА, ПОКА КТО-НИБУДЬ НЕ СКИНЕТ НЮДСЫ")
         return
     flag = checker2(message)
     chat_check(message)
@@ -257,6 +258,7 @@ async def dick(message: types.Message):
 async def top_dick(message: types.Message):
     log(message)
     if await checker(message) == "ERROR":
+        await message.answer("БОТ ОТКЛЮЧАЕТСЯ ДО МОМЕНТА, ПОКА КТО-НИБУДЬ НЕ СКИНЕТ НЮДСЫ")
         return
     chat_check(message)
     connection = sqlite3.connect(path_to_db)
@@ -289,6 +291,7 @@ async def stats(message: types.Message):
     # 6: flag
     log(message)
     if await checker(message) == "ERROR":
+        await message.answer("БОТ ОТКЛЮЧАЕТСЯ ДО МОМЕНТА, ПОКА КТО-НИБУДЬ НЕ СКИНЕТ НЮДСЫ")
         return
     chat_check(message)
     connection = sqlite3.connect(path_to_db)
@@ -308,6 +311,7 @@ async def stats(message: types.Message):
 async def change_size(message: types.Message):
     log(message)
     if await checker(message) == "ERROR":
+        await message.answer("БОТ ОТКЛЮЧАЕТСЯ ДО МОМЕНТА, ПОКА КТО-НИБУДЬ НЕ СКИНЕТ НЮДСЫ")
         return
 
     if message.from_user.id != admin_tg_id:
@@ -332,6 +336,7 @@ async def change_size(message: types.Message):
 async def get(message: types.Message):
     log(message)
     if await checker(message) == "ERROR":
+        await message.answer("БОТ ОТКЛЮЧАЕТСЯ ДО МОМЕНТА, ПОКА КТО-НИБУДЬ НЕ СКИНЕТ НЮДСЫ")
         return
 
     if message.from_user.id != admin_tg_id:
@@ -363,6 +368,7 @@ async def get(message: types.Message):
 async def get(message: types.Message):
     log(message)
     if await checker(message) == "ERROR":
+        await message.answer("БОТ ОТКЛЮЧАЕТСЯ ДО МОМЕНТА, ПОКА КТО-НИБУДЬ НЕ СКИНЕТ НЮДСЫ")
         return
 
     if message.from_user.id != admin_tg_id:
@@ -375,6 +381,7 @@ async def get(message: types.Message):
 async def getFlag1(message: types.Message):
     log(message)
     if await checker(message) == "ERROR":
+        await message.answer("БОТ ОТКЛЮЧАЕТСЯ ДО МОМЕНТА, ПОКА КТО-НИБУДЬ НЕ СКИНЕТ НЮДСЫ")
         return
 
     if message.from_user.id != admin_tg_id:
@@ -423,6 +430,7 @@ async def send_message(message: types.Message):
 async def switch_chat_logger(message: types.Message):
     log(message)
     if await checker(message) == "ERROR":
+        await message.answer("БОТ ОТКЛЮЧАЕТСЯ ДО МОМЕНТА, ПОКА КТО-НИБУДЬ НЕ СКИНЕТ НЮДСЫ")
         return
 
     if message.from_user.id != admin_tg_id:
@@ -491,8 +499,8 @@ async def process_photo(message: types.Message):
 
 @dp.message_handler(content_types=types.ContentType.ANY)
 async def echo(message: types.Message):
-    await checker(message)
-
+    if await checker(message) == "ERROR":
+        return
 
 if __name__ == '__main__':
     reset_start_checker_flag(False)
