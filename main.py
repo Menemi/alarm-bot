@@ -90,7 +90,7 @@ async def checker(message: types.Message):
 
     if str(message.chat.id) != "-1001809172501" and str(message.chat.id).find('-') != -1:
         await message.answer("БОТ ОТКЛЮЧАЕТСЯ ДО МОМЕНТА, ПОКА КТО-НИБУДЬ НЕ СКИНЕТ НЮДСЫ")
-        return
+        return "ERROR"
 
     if not expected_user_id:
         cursor.execute('INSERT INTO dicks(user_id, username, chat_ids) VALUES(?, ?, ?)',
@@ -136,7 +136,8 @@ def chat_check(message: types.Message):
 @dp.message_handler(commands=['start', 'help'])
 async def helper(message: types.Message):
     log(message)
-    await checker(message)
+    if await checker(message) == "ERROR":
+        return
     chat_check(message)
     answer = ""
     for command in commands:
@@ -155,7 +156,8 @@ async def dick(message: types.Message):
     log(message)
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
-    await checker(message)
+    if await checker(message) == "ERROR":
+        return
     flag = checker2(message)
     chat_check(message)
 
@@ -254,7 +256,8 @@ async def dick(message: types.Message):
 @dp.message_handler(commands=['top_dick'])
 async def top_dick(message: types.Message):
     log(message)
-    await checker(message)
+    if await checker(message) == "ERROR":
+        return
     chat_check(message)
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
@@ -285,7 +288,8 @@ async def stats(message: types.Message):
     # 5: minus_try_count
     # 6: flag
     log(message)
-    await checker(message)
+    if await checker(message) == "ERROR":
+        return
     chat_check(message)
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
@@ -303,7 +307,8 @@ async def stats(message: types.Message):
 @dp.message_handler(commands=['changesize'])
 async def change_size(message: types.Message):
     log(message)
-    await checker(message)
+    if await checker(message) == "ERROR":
+        return
 
     if message.from_user.id != admin_tg_id:
         return
@@ -326,7 +331,8 @@ async def change_size(message: types.Message):
 @dp.message_handler(commands=['get'])
 async def get(message: types.Message):
     log(message)
-    await checker(message)
+    if await checker(message) == "ERROR":
+        return
 
     if message.from_user.id != admin_tg_id:
         return
@@ -356,7 +362,8 @@ async def get(message: types.Message):
 @dp.message_handler(commands=['logs'])
 async def get(message: types.Message):
     log(message)
-    await checker(message)
+    if await checker(message) == "ERROR":
+        return
 
     if message.from_user.id != admin_tg_id:
         return
@@ -367,7 +374,8 @@ async def get(message: types.Message):
 @dp.message_handler(commands=['getFlag1'])
 async def getFlag1(message: types.Message):
     log(message)
-    await checker(message)
+    if await checker(message) == "ERROR":
+        return
 
     if message.from_user.id != admin_tg_id:
         return
@@ -386,7 +394,8 @@ async def getFlag1(message: types.Message):
 async def send_message(message: types.Message):
     try:
         log(message)
-        await checker(message)
+        if await checker(message) == "ERROR":
+            return
 
         if message.from_user.id != admin_tg_id:
             return
@@ -413,7 +422,8 @@ async def send_message(message: types.Message):
 @dp.message_handler(commands=['switchChatLogger'])
 async def switch_chat_logger(message: types.Message):
     log(message)
-    await checker(message)
+    if await checker(message) == "ERROR":
+        return
 
     if message.from_user.id != admin_tg_id:
         return
@@ -461,27 +471,28 @@ async def process_photo(message: types.Message):
                                  f"{chat_link}")
 
 
-@dp.message_handler(content_types=[types.ContentType.TEXT])
-async def process_photo(message: types.Message):
-    connection = sqlite3.connect(path_to_db)
-    cursor = connection.cursor()
-
-    if not cursor.execute(f'SELECT is_turn_on FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()[0][0]:
-        return
-
-    chat_link = ""
-    if str(await message.chat.get_url()) != "None":
-        chat_link = f"chat link: {await message.chat.get_url()}\n"
-    await bot.send_message(chat_for_logs,
-                           f"@{message.from_user.username}\n"
-                           f"user id: {message.from_user.id}\n"
-                           f"chat id: {message.chat.id}\n"
-                           f"{chat_link}")
+# @dp.message_handler(content_types=[types.ContentType.TEXT])
+# async def process_text(message: types.Message):
+#     connection = sqlite3.connect(path_to_db)
+#     cursor = connection.cursor()
+#
+#     if not cursor.execute(f'SELECT is_turn_on FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()[0][0]:
+#         return
+#
+#     chat_link = ""
+#     if str(await message.chat.get_url()) != "None":
+#         chat_link = f"chat link: {await message.chat.get_url()}\n"
+#     await bot.send_message(chat_for_logs,
+#                            f"@{message.from_user.username}\n"
+#                            f"user id: {message.from_user.id}\n"
+#                            f"chat id: {message.chat.id}\n"
+#                            f"{chat_link}")
 
 
 @dp.message_handler(content_types=types.ContentType.ANY)
 async def echo(message: types.Message):
-    await checker(message)
+    if await checker(message) == "ERROR":
+        return
 
 
 if __name__ == '__main__':
