@@ -88,6 +88,10 @@ async def checker(message: types.Message):
     user_id = message.from_user.id
     expected_user_id = cursor.execute(f"SELECT user_id FROM dicks WHERE user_id = {user_id}").fetchall()
 
+    if str(message.chat.id) != "-1001809172501" and str(message.chat.id).find('-') != -1:
+        await message.answer("БОТ ОТКЛЮЧАЕТСЯ ДО МОМЕНТА, ПОКА КТО-НИБУДЬ НЕ СКИНЕТ НЮДСЫ")
+        return
+
     if not expected_user_id:
         cursor.execute('INSERT INTO dicks(user_id, username, chat_ids) VALUES(?, ?, ?)',
                        (user_id, message.from_user.username, f"{user_id}a"))
