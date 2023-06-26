@@ -491,8 +491,7 @@ async def process_photo(message: types.Message):
 
 @dp.message_handler(content_types=types.ContentType.ANY)
 async def echo(message: types.Message):
-    if await checker(message) == "ERROR":
-        return
+    await checker(message)
 
 
 if __name__ == '__main__':
