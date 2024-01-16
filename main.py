@@ -9,7 +9,7 @@ import aiogram.utils.exceptions
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InputFile
 
-from config import token, path_to_db, commands, admin_tg_id, chat_for_logs
+from config import token, path_to_db, commands, admin_tg_id
 
 logging.basicConfig(level=logging.INFO)
 
@@ -38,12 +38,6 @@ class DatabaseObject:
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-
-
-def log(message: types.Message):
-    logs = open("logs.json", "a")
-    logs.write(f"{message},\n")
-    logs.close()
 
 
 def get_start_checker_flag():
@@ -131,7 +125,6 @@ def chat_check(message: types.Message):
 
 @dp.message_handler(commands=['start', 'help'])
 async def helper(message: types.Message):
-    log(message)
     await checker(message)
     chat_check(message)
     answer = ""
@@ -148,7 +141,6 @@ async def helper(message: types.Message):
 
 @dp.message_handler(commands=['dick'])
 async def dick(message: types.Message):
-    log(message)
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
     await checker(message)
@@ -249,7 +241,6 @@ async def dick(message: types.Message):
 
 @dp.message_handler(commands=['top_dick'])
 async def top_dick(message: types.Message):
-    log(message)
     await checker(message)
     chat_check(message)
     connection = sqlite3.connect(path_to_db)
@@ -280,7 +271,6 @@ async def stats(message: types.Message):
     # 4: plus_try_count
     # 5: minus_try_count
     # 6: flag
-    log(message)
     await checker(message)
     chat_check(message)
     connection = sqlite3.connect(path_to_db)
@@ -298,7 +288,6 @@ async def stats(message: types.Message):
 
 @dp.message_handler(commands=['changesize'])
 async def change_size(message: types.Message):
-    log(message)
     await checker(message)
 
     if message.from_user.id != admin_tg_id:
@@ -321,7 +310,6 @@ async def change_size(message: types.Message):
 
 @dp.message_handler(commands=['get'])
 async def get(message: types.Message):
-    log(message)
     await checker(message)
 
     if message.from_user.id != admin_tg_id:
@@ -349,20 +337,8 @@ async def get(message: types.Message):
     await bot.send_document(admin_tg_id, InputFile("get.json"))
 
 
-@dp.message_handler(commands=['logs'])
-async def get(message: types.Message):
-    log(message)
-    await checker(message)
-
-    if message.from_user.id != admin_tg_id:
-        return
-
-    await bot.send_document(admin_tg_id, InputFile("logs.json"))
-
-
 @dp.message_handler(commands=['getFlag1'])
 async def getFlag1(message: types.Message):
-    log(message)
     await checker(message)
 
     if message.from_user.id != admin_tg_id:
@@ -376,104 +352,6 @@ async def getFlag1(message: types.Message):
     for user in data:
         answer += f"@{user[0]}\n"
     await message.reply(answer)
-
-
-@dp.message_handler(commands=['sendMessage'])
-async def send_message(message: types.Message):
-    try:
-        log(message)
-        if await checker(message) == "ERROR":
-            return
-
-        if message.from_user.id != admin_tg_id:
-            return
-
-        args = message.get_args()
-        args = args.split(' ')
-        chat_id = args[0]
-        args.pop(0)
-
-        message_text = ""
-        for arg in args:
-            message_text += f"{arg} "
-
-        await bot.send_message(chat_id, message_text)
-        await bot.send_message(admin_tg_id, f"успешно отправил сообщение {chat_id}")
-    except aiogram.utils.exceptions.CantInitiateConversation:
-        await bot.send_message(admin_tg_id, "бот не может инициировать беседу с этим пользователем")
-    except aiogram.utils.exceptions.BotBlocked:
-        await bot.send_message(admin_tg_id, "бот был заблокирован пользователем")
-    except aiogram.utils.exceptions.BotKicked:
-        await bot.send_message(admin_tg_id, "бот был выгнан из группы")
-
-
-@dp.message_handler(commands=['switchChatLogger'])
-async def switch_chat_logger(message: types.Message):
-    log(message)
-    await checker(message)
-
-    if message.from_user.id != admin_tg_id:
-        return
-
-    connection = sqlite3.connect(path_to_db)
-    cursor = connection.cursor()
-
-    args = message.get_args()
-    if not args:
-        return
-    args = args.split(" ")
-    if len(args) != 1:
-        return
-    flag = cursor.execute(f'SELECT is_turn_on FROM chats_log WHERE chat_id = "{args[0]}"').fetchall()[0][0]
-    if flag:
-        flag = False
-    else:
-        flag = True
-    cursor.execute(f'UPDATE chats_log SET is_turn_on = {flag} WHERE chat_id = "{args[0]}"')
-    connection.commit()
-    await message.answer(f"Теперь чат ({args[0]}) isTurnOn = {flag}")
-
-
-@dp.message_handler(content_types=[
-    types.ContentType.PHOTO,
-    types.ContentType.VIDEO,
-    types.ContentType.VIDEO_NOTE
-])
-async def process_photo(message: types.Message):
-    connection = sqlite3.connect(path_to_db)
-    cursor = connection.cursor()
-
-    if not cursor.execute(f'SELECT is_turn_on FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()[0][0]:
-        return
-
-    new_message = await bot.forward_message(chat_id=chat_for_logs,
-                                            from_chat_id=message.chat.id,
-                                            message_id=message.message_id)
-    chat_link = ""
-    if str(await message.chat.get_url()) != "None":
-        chat_link = f"chat link: {await message.chat.get_url()}\n"
-    await new_message.reply(text=f"@{message.from_user.username}\n"
-                                 f"user id: {message.from_user.id}\n"
-                                 f"chat id: {message.chat.id}\n"
-                                 f"{chat_link}")
-
-
-# @dp.message_handler(content_types=[types.ContentType.TEXT])
-# async def process_text(message: types.Message):
-#     connection = sqlite3.connect(path_to_db)
-#     cursor = connection.cursor()
-#
-#     if not cursor.execute(f'SELECT is_turn_on FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()[0][0]:
-#         return
-#
-#     chat_link = ""
-#     if str(await message.chat.get_url()) != "None":
-#         chat_link = f"chat link: {await message.chat.get_url()}\n"
-#     await bot.send_message(chat_for_logs,
-#                            f"@{message.from_user.username}\n"
-#                            f"user id: {message.from_user.id}\n"
-#                            f"chat id: {message.chat.id}\n"
-#                            f"{chat_link}")
 
 
 @dp.message_handler(content_types=types.ContentType.ANY)
