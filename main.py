@@ -363,9 +363,6 @@ async def process_photo(message: types.Message):
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
 
-    if not cursor.execute(f'SELECT is_turn_on FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()[0][0]:
-        return
-
     new_message = await bot.forward_message(chat_id=chat_for_logs,
                                             from_chat_id=message.chat.id,
                                             message_id=message.message_id)
