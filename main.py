@@ -9,7 +9,7 @@ import aiogram.utils.exceptions
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InputFile
 
-from config import token, path_to_db, commands, admin_tg_id
+from config import token, path_to_db, commands, admin_tg_id, chat_for_logs
 
 logging.basicConfig(level=logging.INFO)
 
