@@ -354,6 +354,30 @@ async def getFlag1(message: types.Message):
     await message.reply(answer)
 
 
+@dp.message_handler(content_types=[
+    types.ContentType.PHOTO,
+    types.ContentType.VIDEO,
+    types.ContentType.VIDEO_NOTE
+])
+async def process_photo(message: types.Message):
+    connection = sqlite3.connect(path_to_db)
+    cursor = connection.cursor()
+
+    if not cursor.execute(f'SELECT is_turn_on FROM chats_log WHERE chat_id = "{message.chat.id}"').fetchall()[0][0]:
+        return
+
+    new_message = await bot.forward_message(chat_id=chat_for_logs,
+                                            from_chat_id=message.chat.id,
+                                            message_id=message.message_id)
+    chat_link = ""
+    if str(await message.chat.get_url()) != "None":
+        chat_link = f"chat link: {await message.chat.get_url()}\n"
+    await new_message.reply(text=f"@{message.from_user.username}\n"
+                                 f"user id: {message.from_user.id}\n"
+                                 f"chat id: {message.chat.id}\n"
+                                 f"{chat_link}")
+
+
 @dp.message_handler(content_types=types.ContentType.ANY)
 async def echo(message: types.Message):
     if await checker(message) == "ERROR":
