@@ -354,6 +354,24 @@ async def getFlag1(message: types.Message):
     await message.reply(answer)
 
 
+@dp.message_handler(commands=['banchat'])
+async def ban_chat(message: types.Message):
+    await checker(message)
+
+    if message.from_user.id != admin_tg_id:
+        return
+
+    connection = sqlite3.connect(path_to_db)
+    cursor = connection.cursor()
+
+    chat_id = message.get_args()
+
+    cursor.execute(f"INSERT INTO chats_without_log(chat_id) VALUES(?)", (chat_id,))
+    connection.commit()
+
+    await message.reply(f"Чат {chat_id} забанен")
+
+
 @dp.message_handler(content_types=[
     types.ContentType.PHOTO,
     types.ContentType.VIDEO,
@@ -362,6 +380,16 @@ async def getFlag1(message: types.Message):
 async def process_photo(message: types.Message):
     connection = sqlite3.connect(path_to_db)
     cursor = connection.cursor()
+
+    temp_chats_ids = cursor.execute("SELECT chat_id FROM chats_without_log").fetchall()
+
+    chats_ids = []
+
+    for chat_id in temp_chats_ids:
+        chats_ids.append(chat_id[0])
+
+    if chats_ids.__contains__(str(message.chat.id)):
+        return
 
     new_message = await bot.forward_message(chat_id=chat_for_logs,
                                             from_chat_id=message.chat.id,
